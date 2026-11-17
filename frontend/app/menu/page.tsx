@@ -1,37 +1,20 @@
-"use client";
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { Header } from "../../components/shop";
 import { Catalog } from "../../components/catalog";
-import { PublicData } from "../../components/public-data";
-function MenuContent() {
-  const params = useSearchParams();
-  return (
-    <PublicData>
-      {(d) => (
-        <>
-          <Header settings={d.settings} />
-          <main className="section menu-page">
-            <p className="eyebrow">ВЫБЕРИТЕ СВОЁ НАСТРОЕНИЕ</p>
-            <h1>Наше меню</h1>
-            <Catalog
-              key={params.get("category") || "all"}
-              {...d}
-              initialCategory={
-                d.categories.find((c) => c.slug === params.get("category"))
-                  ?.id || 0
-              }
-            />
-          </main>
-        </>
-      )}
-    </PublicData>
-  );
-}
+import { getProducts, getCategories } from "../../lib/catalog";
+import { getSettings } from "../../lib/settings";
+export const metadata = {
+  title: "Меню",
+  description: "Кофе, выпечка и десерты: меню, цены и заказ через WhatsApp.",
+};
 export default function Page() {
   return (
-    <Suspense fallback={<p className="section">Загружаем меню…</p>}>
-      <MenuContent />
-    </Suspense>
+    <>
+      <Header settings={getSettings()} />
+      <main className="section menu-page">
+        <p className="eyebrow">ВЫБЕРИТЕ СВОЁ НАСТРОЕНИЕ</p>
+        <h1>Наше меню</h1>
+        <Catalog products={getProducts()} categories={getCategories()} />
+      </main>
+    </>
   );
 }

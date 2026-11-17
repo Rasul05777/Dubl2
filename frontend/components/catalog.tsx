@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Plus, Search } from "lucide-react";
-import { Category, Product, money } from "../lib/api";
-import { mediaUrl } from "../lib/api";
+import { Category, Product } from "../lib/models";
+import { money } from "../lib/format";
+
 import { Quantity, useCart } from "./shop";
 export function Catalog({
   products,
@@ -20,6 +21,14 @@ export function Catalog({
   const [category, setCategory] = useState(initialCategory),
     [search, setSearch] = useState("");
   const { items, change } = useCart();
+  useEffect(() => {
+    if (!compact) {
+      const slug = new URLSearchParams(window.location.search).get("category");
+      setCategory(
+        categories.find((c) => c.slug === slug)?.id || initialCategory,
+      );
+    }
+  }, [categories, compact, initialCategory]);
   const visible = products.filter(
     (p) =>
       (!category || p.category_id === category) &&
@@ -60,7 +69,7 @@ export function Catalog({
       <div className="products">
         {(compact ? visible.slice(0, 4) : visible).map((p, i) => (
           <motion.article
-            initial={{ opacity: 0, y: 15 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: (i % 4) * 0.05 }}
@@ -69,7 +78,7 @@ export function Catalog({
           >
             <div className="product-image">
               {p.image_url ? (
-                <img src={mediaUrl(p.image_url)} alt={p.name} loading="lazy" />
+                <img src={p.image_url} alt={p.name} loading="lazy" />
               ) : (
                 <div className="image-placeholder">
                   Дубль <i>II</i>
@@ -80,9 +89,7 @@ export function Catalog({
             <div className="product-body">
               <span className="weight">{p.weight}</span>
               <h3>
-                <Link href={`/product/?slug=${encodeURIComponent(p.slug)}`}>
-                  {p.name}
-                </Link>
+                <Link href={`/menu/${p.slug}/`}>{p.name}</Link>
               </h3>
               <p>{p.description}</p>
               <div className="product-bottom">

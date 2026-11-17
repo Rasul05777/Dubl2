@@ -1,147 +1,140 @@
 import { test, expect } from "@playwright/test";
-test("cart persists and checkout validates customer details", async ({
+import { getProducts } from "../lib/catalog";
+import { getSettings } from "../lib/settings";
+test.beforeEach(async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+  page.on("request", (r) => {
+    expect(r.url()).not.toMatch(/:8000|\/api\/|twcstorage|\/uploads\//);
+  });
+  page.on("close", () => expect(errors).toEqual([]));
+});
+test("home and catalog render without JavaScript and have static SEO", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(baseURL + "/");
+  await expect(page.locator("h1")).toContainText("Кофе");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    getSettings().seo_title,
+  );
+  await page.goto(baseURL + "/menu/");
+  await expect(
+    page.getByRole("heading", { name: "Капучино", exact: true }),
+  ).toBeVisible();
+  await page.goto(baseURL + "/menu/cappuccino/");
+  await expect(page.locator("h1")).toHaveText("Капучино");
+  await context.close();
+});
+test("category switching, photos, cart quantities and reload", async ({
   page,
 }) => {
-  await page.goto("/menu");
-  await expect(page.getByRole("heading", { name: "Наше меню" })).toBeVisible();
+  await page.goto("/menu/");
+  await page.getByRole("button", { name: "Выпечка", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Капучино", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Всё меню", exact: true }).click();
+  await expect
+    .poll(() =>
+      page
+        .getByAltText("Капучино", { exact: true })
+        .evaluate((img: HTMLImageElement) => img.naturalWidth),
+    )
+    .toBeGreaterThan(0);
   await page
     .getByRole("button", { name: "В корзину: Капучино", exact: true })
     .click();
+  await page.locator(".cart-button").click();
+  let cart = page.getByRole("dialog");
+  await cart
+    .getByRole("button", { name: "Добавить Капучино", exact: true })
+    .click();
+  await expect(cart.locator(".quantity span")).toHaveText("2");
   await page.reload();
   await page.locator(".cart-button").click();
-  const cart = page.getByRole("dialog", { name: "Корзина" });
-  await expect(cart.getByText("Капучино", { exact: true })).toBeVisible();
-  await cart.getByRole("link", { name: "Оформить заказ" }).click();
-  await page.getByRole("button", { name: "Проверить заказ" }).click();
-  await expect(page.getByText("Введите имя", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Введите корректный телефон", { exact: true }),
-  ).toBeVisible();
-});
-test("admin requires login", async ({ page }) => {
-  await page.goto("/admin");
-  await expect(
-    page.getByRole("button", { name: "Войти", exact: true }),
-  ).toBeVisible();
-  const r = await page.request.get(
-    (process.env.E2E_API_URL || "http://localhost:8000") +
-      "/api/admin/products",
+  cart = page.getByRole("dialog");
+  await expect(cart.locator(".quantity span")).toHaveText("2");
+  const stored = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("dubl-cart")!),
   );
-  expect(r.status()).toBe(401);
-});
-
-test("admin changes and new product work without rebuilding static frontend", async ({
-  page,
-}, testInfo) => {
-  const api = process.env.E2E_API_URL || "http://localhost:8000";
-  const origin = process.env.E2E_BASE_URL || "http://localhost:8080";
-  await page.goto("/admin/");
-  await page
-    .getByLabel("Логин", { exact: true })
-    .fill(process.env.E2E_ADMIN_USERNAME || "admin");
-  await page
-    .getByLabel("Пароль", { exact: true })
-    .fill(process.env.E2E_ADMIN_PASSWORD || "test-password-123");
-  await page.getByRole("button", { name: "Войти", exact: true }).click();
+  expect(stored).toEqual([{ product_id: 1, quantity: 2 }]);
+  await cart
+    .getByRole("button", { name: "Уменьшить Капучино", exact: true })
+    .click();
+  await cart
+    .getByRole("button", { name: "Уменьшить Капучино", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Выйти", exact: true }),
+    cart.getByText("Пока здесь пусто.", { exact: false }),
   ).toBeVisible();
-  const categories = await (
-    await page.request.get(api + "/api/admin/categories")
-  ).json();
-  const slug = `static-test-${testInfo.project.name}-${Date.now()}`;
-  const product = {
-    name: "Тест экспорта " + slug,
-    slug,
-    category_id: categories[0].id,
-    price: "123.45",
-    description: "Товар создан после статической сборки",
-    weight: "1 шт.",
-    image_url: "",
-    is_available: true,
-    is_active: true,
-    sort_order: 999,
-  };
-  const headers = { Origin: origin };
-  const upload = await page.request.post(api + "/api/admin/uploads", {
-    headers,
-    multipart: {
-      file: {
-        name: "test.png",
-        mimeType: "image/png",
-        buffer: Buffer.from(
-          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=",
-          "base64",
-        ),
-      },
-    },
-  });
-  expect(upload.ok()).toBeTruthy();
-  const image = (await upload.json()).url;
-  product.image_url = image;
-  const created = await page.request.post(api + "/api/admin/products", {
-    headers,
-    data: product,
-  });
-  expect(created.ok()).toBeTruthy();
-  const row = await created.json();
-  try {
-    await page.goto("/product/?slug=" + slug);
-    await expect(
-      page.getByRole("heading", { level: 1, name: product.name }),
-    ).toBeVisible();
-    await expect(page.getByAltText(product.name)).toBeVisible();
-    await expect
-      .poll(() =>
-        page
-          .getByAltText(product.name)
-          .evaluate((img: HTMLImageElement) => img.naturalWidth),
-      )
-      .toBeGreaterThan(0);
-    await page
-      .getByRole("button", { name: "В корзину: " + product.name, exact: true })
-      .click();
-    await page.goto("/checkout/");
-    await page.getByLabel("Ваше имя").fill("Тестовый покупатель");
-    await page.getByLabel("Телефон", { exact: true }).fill("+79991234567");
-    await page.getByLabel("Как вам удобно?").selectOption("pickup");
-    const current = await (
-      await page.request.get(api + "/api/admin/settings")
-    ).json();
-    expect(
-      (
-        await page.request.patch(api + "/api/admin/settings", {
-          headers,
-          data: { ...current, whatsapp: "79991234567" },
-        })
-      ).ok(),
-    ).toBeTruthy();
-    await page
-      .getByRole("button", { name: "Проверить заказ", exact: true })
-      .click();
-    const link = page.getByRole("link", { name: "Перейти в WhatsApp" });
-    await expect(link).toHaveAttribute(
-      "href",
-      /^https:\/\/wa.me\/79991234567\?text=/,
+});
+test("legacy cart refreshes prices and removes unavailable identifiers", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "dubl-cart",
+      JSON.stringify([
+        { product: { id: 1, price: "1", name: "Old price" }, quantity: 1 },
+        { product_id: 999999, quantity: 2 },
+      ]),
+    ),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("status")).toContainText("больше недоступны");
+  await page.locator(".cart-button").click();
+  const cart = page.getByRole("dialog");
+  await expect(cart.getByText("Капучино", { exact: true })).toBeVisible();
+  await expect(cart.getByText("280", { exact: false }).first()).toBeVisible();
+});
+test("delivery and pickup forms validate without backend", async ({ page }) => {
+  await page.goto("/menu/?category=coffee");
+  await page
+    .getByRole("button", { name: "В корзину: Капучино", exact: true })
+    .click();
+  await page.goto("/checkout/");
+  await page
+    .getByRole("button", { name: "Оформить заказ", exact: true })
+    .click();
+  await expect(page.getByText("Введите имя", { exact: true })).toBeVisible();
+  await page.getByLabel("Ваше имя").fill("Анна");
+  await page.getByLabel("Телефон", { exact: true }).fill("+79991234567");
+  await expect(page.getByLabel("Адрес доставки")).toBeVisible();
+  await page.getByLabel("Адрес доставки").fill("Пушкина, дом 1");
+  await page.getByLabel("Как вам удобно?").selectOption("pickup");
+  await expect(page.getByLabel("Адрес доставки")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Оформить заказ", exact: true })
+    .click();
+  if (!getSettings().whatsapp)
+    await expect(page.getByRole("alert").filter({hasText:"Номер WhatsApp"})).toContainText(
+      "Номер WhatsApp ещё не указан",
     );
-    await expect(
-      page.getByText("Самостоятельно отправьте сообщение", { exact: false }),
-    ).toBeVisible();
-  } finally {
+});
+test("all internal routes open directly; admin absent; mobile layout fits", async ({
+  page,
+  request,
+}) => {
+  for (const path of [
+    "/",
+    "/menu/",
+    "/checkout/",
+    ...getProducts().map((p) => `/menu/${p.slug}/`),
+  ]) {
+    const r = await page.goto(path);
+    expect(r?.status()).toBe(200);
     expect(
-      (
-        await page.request.delete(api + "/api/admin/products/" + row.id, {
-          headers,
-        })
-      ).ok(),
-    ).toBeTruthy();
-    expect(
-      (
-        await page.request.delete(
-          api + "/api/admin/uploads/" + image.split("/").pop(),
-          { headers },
-        )
-      ).ok(),
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
     ).toBeTruthy();
   }
+  expect((await request.get("/admin/")).status()).toBe(404);
 });

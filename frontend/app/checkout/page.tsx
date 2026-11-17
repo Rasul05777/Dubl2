@@ -5,31 +5,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Header, useCart, Quantity } from "../../components/shop";
-import { api, Settings, money } from "../../lib/api";
-const schema = z
-  .object({
-    name: z.string().min(2, "Введите имя"),
-    phone: z
-      .string()
-      .regex(/^\+?[\d ()-]{10,22}$/, "Введите корректный телефон"),
-    method: z.enum(["delivery", "pickup"]),
-    address: z.string(),
-    comment: z.string().max(1000),
-    scheduled_at: z.string(),
-  })
-  .refine((x) => x.method !== "delivery" || x.address.trim().length >= 5, {
-    path: ["address"],
-    message: "Укажите адрес доставки",
-  });
+import { getSettings } from "../../lib/settings";
+import { money, cartTotal } from "../../lib/format";
+import { checkoutSchema as schema, buildOrder } from "../../lib/checkout";
 type Form = z.infer<typeof schema>;
 export default function Checkout() {
   const { items } = useCart(),
-    [settings, setSettings] = useState<Settings>(),
+    [settings] = useState(getSettings),
     [error, setError] = useState(""),
     [preview, setPreview] = useState<{
       message: string;
       whatsapp_url: string;
-      total: string;
+      total: number;
     } | null>(null);
   const {
     register,
@@ -39,41 +26,24 @@ export default function Checkout() {
   } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: {
-      method: "delivery",
+      method: settings.delivery_enabled ? "delivery" : "pickup",
       address: "",
       comment: "",
       scheduled_at: "",
     },
   });
-  useEffect(() => {
-    api<Settings>("/settings")
-      .then(setSettings)
-      .catch((e) => setError(e.message));
-  }, []);
   const method = watch("method");
   useEffect(() => setPreview(null), [items]);
   async function submit(data: Form) {
     setError("");
     setPreview(null);
     try {
-      const result = await api<{
-        message: string;
-        whatsapp_url: string;
-        total: string;
-      }>("/checkout/preview", {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          scheduled_at: data.scheduled_at
-            ? new Date(data.scheduled_at).toISOString()
-            : "",
-          items: items.map((x) => ({
-            product_id: x.product.id,
-            quantity: x.quantity,
-          })),
-        }),
-      });
+      const result = buildOrder(
+        data,
+        items.map((x) => ({ product_id: x.product.id, quantity: x.quantity })),
+      );
       setPreview(result);
+      window.open(result.whatsapp_url, "_blank", "noopener,noreferrer");
     } catch (e) {
       setError((e as Error).message);
     }
@@ -97,7 +67,11 @@ export default function Checkout() {
               <h3>Контактные данные</h3>
               <label>
                 Ваше имя
-                <input {...register("name")} autoComplete="given-name" />
+                <input
+                  aria-label="Ваше имя"
+                  {...register("name")}
+                  autoComplete="given-name"
+                />
                 {errors.name && (
                   <small className="error">{errors.name.message}</small>
                 )}
@@ -105,6 +79,7 @@ export default function Checkout() {
               <label>
                 Телефон
                 <input
+                  aria-label="Телефон"
                   {...register("phone")}
                   type="tel"
                   autoComplete="tel"
@@ -135,6 +110,7 @@ export default function Checkout() {
                 <label>
                   Адрес доставки
                   <input
+                    aria-label="Адрес доставки"
                     {...register("address")}
                     autoComplete="street-address"
                   />
@@ -157,7 +133,7 @@ export default function Checkout() {
                 />
               </label>
               <p className="muted">
-                Контактные данные нужны для обработки заказа и будут включены в
+                Сумма заказа предварительная. Контактные данные будут включены в
                 сообщение WhatsApp.
               </p>
               {error && (
@@ -166,11 +142,11 @@ export default function Checkout() {
                 </p>
               )}
               <button className="button" disabled={isSubmitting}>
-                {isSubmitting ? "Проверяем…" : "Проверить заказ"}
+                {isSubmitting ? "Готовим…" : "Оформить заказ"}
               </button>
               {preview && (
                 <div className="preview">
-                  <h3>Заказ проверен · {money(preview.total)}</h3>
+                  <h3>Предварительная сумма · {money(preview.total)}</h3>
                   <pre>{preview.message}</pre>
                   <a
                     className="button"
@@ -200,14 +176,7 @@ export default function Checkout() {
               ))}
               <div className="total">
                 <span>Товары</span>
-                <b>
-                  {money(
-                    items.reduce(
-                      (s, x) => s + Number(x.product.price) * x.quantity,
-                      0,
-                    ),
-                  )}
-                </b>
+                <b>{money(cartTotal(items))}</b>
               </div>
               <p className="muted">
                 {method === "pickup"
@@ -215,7 +184,7 @@ export default function Checkout() {
                   : settings?.delivery_price != null
                     ? `Доставка: ${money(settings.delivery_price)}`
                     : "Доставка не включена, стоимость уточнит менеджер"}
-                . Окончательный расчёт — после проверки заказа.
+                . Итоговую стоимость и наличие подтвердит сотрудник заведения.
               </p>
             </aside>
           </div>

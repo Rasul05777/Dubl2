@@ -1,19 +1,14 @@
-"use client";
 import Link from "next/link";
 import { ArrowRight, Clock, MapPin, Truck, Coffee } from "lucide-react";
 import { Header } from "../components/shop";
 import { Catalog } from "../components/catalog";
-import { PublicData } from "../components/public-data";
-import { publicData, money, mediaUrl } from "../lib/api";
+import { getProducts, getCategories } from "../lib/catalog";
+import { getSettings } from "../lib/settings";
+import { money } from "../lib/format";
 export default function Home() {
-  return <PublicData>{(data) => <HomeContent data={data} />}</PublicData>;
-}
-function HomeContent({
-  data,
-}: {
-  data: Awaited<ReturnType<typeof publicData>>;
-}) {
-  const { settings: s, categories, products } = data;
+  const s = getSettings(),
+    products = getProducts(),
+    categories = getCategories();
   return (
     <>
       <Header settings={s} />
@@ -23,7 +18,7 @@ function HomeContent({
           style={
             s.hero_image_url
               ? {
-                  backgroundImage: `linear-gradient(90deg,rgba(23,14,10,.94),rgba(23,14,10,.05)),url("${mediaUrl(s.hero_image_url)}")`,
+                  backgroundImage: `linear-gradient(90deg,rgba(23,14,10,.94),rgba(23,14,10,.05)),url("${s.hero_image_url}")`,
                 }
               : {}
           }
@@ -78,7 +73,7 @@ function HomeContent({
                 >
                   {(p || s.hero_image_url) && (
                     <img
-                      src={mediaUrl(p?.image_url || s.hero_image_url)}
+                      src={p?.image_url || s.hero_image_url}
                       alt={c.name}
                       loading="lazy"
                     />
@@ -179,6 +174,20 @@ function HomeContent({
             </a>
           )}
         </section>
+        {s.social_links.length > 0 && (
+          <nav aria-label="Социальные сети" className="section">
+            {s.social_links.map((link) => (
+              <a
+                key={link.url}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {link.name}
+              </a>
+            ))}
+          </nav>
+        )}
       </main>
       <footer>
         <span>

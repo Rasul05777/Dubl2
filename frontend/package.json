@@ -6,7 +6,8 @@
     "build": "next build --webpack",
     "start": "python3 -m http.server 3000 --directory out",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prebuild": "node scripts/validate-data.mjs"
   },
   "dependencies": {
     "next": "latest",

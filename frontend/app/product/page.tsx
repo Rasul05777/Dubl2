@@ -1,40 +1,24 @@
-"use client";
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "../../components/shop";
-import { Catalog } from "../../components/catalog";
-import { PublicData } from "../../components/public-data";
-function ProductContent() {
-  const params = useSearchParams();
-  return (
-    <PublicData>
-      {(d) => {
-        const p = d.products.find((p) => p.slug === params.get("slug"));
-        return (
-          <>
-            <Header settings={d.settings} />
-            <main className="section">
-              <Link href="/menu/">← Всё меню</Link>
-              {p ? (
-                <>
-                  <h1 style={{ marginTop: 30 }}>{p.name}</h1>
-                  <Catalog products={[p]} categories={d.categories} compact />
-                </>
-              ) : (
-                <h1>Товар не найден</h1>
-              )}
-            </main>
-          </>
-        );
-      }}
-    </PublicData>
-  );
-}
+import { getProducts } from "../../lib/catalog";
+import { LegacyProduct } from "../../components/legacy-product";
+export const metadata = {
+  title: "Товары",
+  robots: { index: false, follow: true },
+};
 export default function Page() {
   return (
-    <Suspense fallback={<p className="section">Загружаем товар…</p>}>
-      <ProductContent />
-    </Suspense>
+    <>
+      <Header />
+      <LegacyProduct />
+      <main className="section">
+        <h1>Наши товары</h1>
+        {getProducts().map((p) => (
+          <p key={p.id}>
+            <Link href={`/menu/${p.slug}/`}>{p.name}</Link>
+          </p>
+        ))}
+      </main>
+    </>
   );
 }

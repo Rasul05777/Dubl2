@@ -3,12 +3,16 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   ReactNode,
 } from "react";
 import Link from "next/link";
 import { ShoppingBag, Plus, Minus, X, ArrowRight, Menu } from "lucide-react";
-import { Product, Settings, money, mediaUrl } from "../lib/api";
+import { Product, Settings, CartLine } from "../lib/models";
+import { money, cartTotal } from "../lib/format";
+import { getProducts, reconcileCart, resolveCart } from "../lib/catalog";
+import { getSettings } from "../lib/settings";
 type Entry = { product: Product; quantity: number };
 const Cart = createContext<{
   items: Entry[];
@@ -18,41 +22,65 @@ const Cart = createContext<{
 }>({ items: [], change: () => {}, clear: () => {}, open: () => {} });
 export const useCart = () => useContext(Cart);
 export function ShopProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<Entry[]>([]),
+  const [lines, setLines] = useState<CartLine[]>([]),
     [ready, setReady] = useState(false),
-    [shown, setShown] = useState(false);
-  useEffect(() => {
+    [shown, setShown] = useState(false),
+    [notice, setNotice] = useState("");
+  const items = useMemo(() => resolveCart(lines), [lines]);
+  function restore() {
     try {
-      const d = JSON.parse(localStorage.getItem("dubl-cart") || "[]");
-      if (Array.isArray(d))
-        setItems(
-          d.filter(
-            (x) =>
-              x?.product?.id &&
-              Number.isInteger(x.quantity) &&
-              x.quantity > 0 &&
-              x.quantity <= 99,
-          ),
+      const result = reconcileCart(
+        JSON.parse(localStorage.getItem("dubl-cart") || "[]"),
+      );
+      setLines(result.items);
+      if (result.changed)
+        setNotice(
+          "Некоторые товары удалены из корзины: они больше недоступны. Цены обновлены по текущему меню.",
         );
-    } catch {}
+    } catch {
+      setLines([]);
+      setNotice(
+        "Не удалось прочитать сохранённую корзину. Добавьте товары заново.",
+      );
+    }
     setReady(true);
+  }
+  useEffect(() => {
+    restore();
+    window.addEventListener("storage", restore);
+    return () => window.removeEventListener("storage", restore);
   }, []);
   useEffect(() => {
-    if (ready) localStorage.setItem("dubl-cart", JSON.stringify(items));
-  }, [items, ready]);
+    if (ready)
+      try {
+        localStorage.setItem("dubl-cart", JSON.stringify(lines));
+      } catch {
+        setNotice(
+          "Браузер не разрешает сохранять корзину. Она доступна до обновления страницы.",
+        );
+      }
+  }, [lines, ready]);
+  function open() {
+    const result = reconcileCart(lines);
+    setLines(result.items);
+    if (result.changed) setNotice("Недоступные товары удалены из корзины.");
+    setShown(true);
+  }
   const change = (product: Product, d: number) =>
-    setItems((old) => {
-      const entry = old.find((x) => x.product.id === product.id);
+    setLines((old) => {
+      if (!getProducts().some((p) => p.id === product.id && p.is_available))
+        return old;
+      const entry = old.find((x) => x.product_id === product.id);
       return entry
         ? old
             .map((x) =>
-              x.product.id === product.id
-                ? { product, quantity: Math.min(99, x.quantity + d) }
+              x.product_id === product.id
+                ? { ...x, quantity: Math.min(99, x.quantity + d) }
                 : x,
             )
             .filter((x) => x.quantity > 0)
         : d > 0
-          ? [...old, { product, quantity: 1 }]
+          ? [...old, { product_id: product.id, quantity: 1 }]
           : old;
     });
   const count = items.reduce((n, x) => n + x.quantity, 0);
@@ -61,22 +89,20 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         change,
-        clear: () => setItems([]),
-        open: () => setShown(true),
+        clear: () => setLines([]),
+        open,
       }}
     >
       {children}
+      {notice && (
+        <p className="section muted" role="status">
+          {notice}
+        </p>
+      )}
       {count > 0 && (
-        <button className="mobile-cart" onClick={() => setShown(true)}>
+        <button className="mobile-cart" onClick={open}>
           <ShoppingBag size={19} /> Корзина · {count}
-          <span>
-            {money(
-              items.reduce(
-                (s, x) => s + Number(x.product.price) * x.quantity,
-                0,
-              ),
-            )}
-          </span>
+          <span>{money(cartTotal(items))}</span>
         </button>
       )}
       {shown && (
@@ -111,18 +137,11 @@ export function ShopProvider({ children }: { children: ReactNode }) {
                   </div>
                 ))}
                 <div className="total">
-                  Товары{" "}
-                  <b>
-                    {money(
-                      items.reduce(
-                        (s, x) => s + Number(x.product.price) * x.quantity,
-                        0,
-                      ),
-                    )}
-                  </b>
+                  Товары <b>{money(cartTotal(items))}</b>
                 </div>
                 <p className="muted">
-                  Стоимость и наличие проверим перед переходом в WhatsApp.
+                  Сумма предварительная. Цены и наличие подтвердит сотрудник
+                  заведения.
                 </p>
                 <Link
                   className="button"
@@ -165,17 +184,14 @@ export function Quantity({
     </div>
   );
 }
-export function Header({ settings }: { settings?: Settings }) {
+export function Header({ settings = getSettings() }: { settings?: Settings }) {
   const { items, open } = useCart(),
     [menu, setMenu] = useState(false);
   return (
     <header>
       <Link className="brand" href="/">
         {settings?.logo_url ? (
-          <img
-            src={mediaUrl(settings.logo_url)}
-            alt={settings.restaurant_name}
-          />
+          <img src={settings.logo_url} alt={settings.restaurant_name} />
         ) : (
           <>
             <span>

@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
-import type { MetadataRoute } from "next";
-export default function robots(): MetadataRoute.Robots {
+import { getSettings } from "../lib/settings";
+export default function robots() {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/checkout"] },
-    sitemap: `${process.env.SITE_URL || "http://localhost:8080"}/sitemap.xml`,
+    rules: { userAgent: "*", allow: "/", disallow: ["/checkout/", "/admin/"] },
+    sitemap: new URL("/sitemap.xml", getSettings().site_url).href,
   };
 }

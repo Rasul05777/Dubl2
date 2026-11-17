@@ -1,7 +1,8 @@
 export const dynamic = "force-static";
-import type { MetadataRoute } from "next";
-export default function sitemap(): MetadataRoute.Sitemap {
-  return ["", "/menu"].map((p) => ({
-    url: (process.env.SITE_URL || "http://localhost:8080") + p,
-  }));
+import { getProducts } from "../lib/catalog";
+import { getSettings } from "../lib/settings";
+export default function sitemap() {
+  return ["/", "/menu/", ...getProducts().map((p) => `/menu/${p.slug}/`)].map(
+    (path) => ({ url: new URL(path, getSettings().site_url).href }),
+  );
 }

@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Кофе",
+    "slug": "coffee",
+    "sort_order": 1,
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "name": "Выпечка",
+    "slug": "bakery",
+    "sort_order": 2,
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "name": "Десерты",
+    "slug": "desserts",
+    "sort_order": 3,
+    "is_active": true
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "category_id": 1,
+    "name": "Капучино",
+    "slug": "cappuccino",
+    "description": "Нежная молочная пена и насыщенный эспрессо",
+    "price": "280.00",
+    "weight": "250 мл",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 0
+  },
+  {
+    "id": 2,
+    "category_id": 1,
+    "name": "Флэт уайт",
+    "slug": "flat-white",
+    "description": "Двойной эспрессо и бархатистое молоко",
+    "price": "310.00",
+    "weight": "200 мл",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 1
+  },
+  {
+    "id": 3,
+    "category_id": 2,
+    "name": "Миндальный круассан",
+    "slug": "almond-croissant",
+    "description": "Слоёное тесто, миндальный крем и лепестки миндаля",
+    "price": "320.00",
+    "weight": "110 г",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 2
+  },
+  {
+    "id": 4,
+    "category_id": 2,
+    "name": "Круассан классический",
+    "slug": "croissant",
+    "description": "Хрустящая корочка и нежный сливочный вкус",
+    "price": "230.00",
+    "weight": "80 г",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 3
+  },
+  {
+    "id": 5,
+    "category_id": 3,
+    "name": "Чизкейк с малиной",
+    "slug": "cheesecake",
+    "description": "Сливочный чизкейк с ягодным соусом",
+    "price": "390.00",
+    "weight": "150 г",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 4
+  },
+  {
+    "id": 6,
+    "category_id": 3,
+    "name": "Шоколадный тарт",
+    "slug": "chocolate-tart",
+    "description": "Тёмный шоколад на рассыпчатой песочной основе",
+    "price": "360.00",
+    "weight": "120 г",
+    "image_url": "/images/products/cafe-selection.webp",
+    "is_available": true,
+    "is_active": true,
+    "sort_order": 5
+  }
+]

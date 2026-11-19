@@ -195,7 +195,7 @@ export function Header({ settings = getSettings() }: { settings?: Settings }) {
     <header>
       <Link className="brand" href="/">
         {settings?.logo_url ? (
-          <img src={settings.logo_url} alt={settings.restaurant_name} />
+          <img src={settings.logo_url} alt={settings.restaurant_name} width={403} height={228} />
         ) : (
           <>
             <span>

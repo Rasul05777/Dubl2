@@ -95,7 +95,9 @@ nav a:hover {
   margin: 9px 0 0 18px;
 }
 .brand img {
+  display: block;
   width: 160px;
+  height: auto;
   max-height: 86px;
   object-fit: contain;
 }
@@ -656,6 +658,10 @@ textarea {
   }
   .brand {
     min-width: 110px;
+  }
+  .brand img {
+    width: 124px;
+    max-height: 70px;
   }
   .brand span {
     font-size: 33px;

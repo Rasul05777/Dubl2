@@ -8,6 +8,8 @@ import {
   ReactNode,
 } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { CSSProperties } from "react";
 import { ShoppingBag, Plus, Minus, X, ArrowRight, Menu } from "lucide-react";
 import { Product, Settings, CartLine } from "../lib/models";
 import { money, cartTotal } from "../lib/format";
@@ -191,11 +193,37 @@ export function Quantity({
 export function Header({ settings = getSettings() }: { settings?: Settings }) {
   const { items, open } = useCart(),
     [menu, setMenu] = useState(false);
+  const pathname = usePathname();
+  const [section, setSection] = useState("");
+  useEffect(() => {
+    const sync = () => setSection(window.location.hash);
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+  const active = (target: string) =>
+    target === "/"
+      ? pathname === "/" && !section
+      : target === "/menu"
+        ? pathname.startsWith("/menu")
+        : pathname === "/" && section === target;
   return (
-    <header>
+    <header
+      className="site-header"
+      style={
+        {
+          "--header-image": `url("${settings.hero_image_url}")`,
+        } as CSSProperties
+      }
+    >
       <Link className="brand" href="/">
         {settings?.logo_url ? (
-          <img src={settings.logo_url} alt={settings.restaurant_name} width={403} height={228} />
+          <img
+            src={settings.logo_url}
+            alt={settings.restaurant_name}
+            width={403}
+            height={228}
+          />
         ) : (
           <>
             <span>
@@ -205,17 +233,42 @@ export function Header({ settings = getSettings() }: { settings?: Settings }) {
           </>
         )}
       </Link>
-      <nav className={menu ? "expanded" : ""}>
-        <Link onClick={() => setMenu(false)} href="/">
+      <nav aria-label="Основная навигация" className={menu ? "expanded" : ""}>
+        <Link
+          aria-current={active("/") ? "page" : undefined}
+          onClick={() => {
+            setMenu(false);
+            setSection("");
+          }}
+          href="/"
+        >
           Главная
         </Link>
-        <Link onClick={() => setMenu(false)} href="/menu">
+        <Link
+          aria-current={active("/menu") ? "page" : undefined}
+          onClick={() => setMenu(false)}
+          href="/menu"
+        >
           Меню
         </Link>
-        <Link onClick={() => setMenu(false)} href="/#about">
+        <Link
+          aria-current={active("#about") ? "location" : undefined}
+          onClick={() => {
+            setMenu(false);
+            setSection("#about");
+          }}
+          href="/#about"
+        >
           О нас
         </Link>
-        <Link onClick={() => setMenu(false)} href="/#contacts">
+        <Link
+          aria-current={active("#contacts") ? "location" : undefined}
+          onClick={() => {
+            setMenu(false);
+            setSection("#contacts");
+          }}
+          href="/#contacts"
+        >
           Контакты
         </Link>
       </nav>
@@ -226,6 +279,7 @@ export function Header({ settings = getSettings() }: { settings?: Settings }) {
       </button>
       <button
         aria-label="Навигация"
+        aria-expanded={menu}
         className="hamburger"
         onClick={() => setMenu(!menu)}
       >

@@ -148,14 +148,46 @@ test("new assortment has names and no invented prices or photos", async ({
   await expect(
     page.getByRole("heading", { name: "Бородинский", exact: true }),
   ).toBeVisible();
-  const card = page
-    .locator("article")
-    .filter({
-      has: page.getByRole("heading", { name: "Бородинский", exact: true }),
-    });
+  const card = page.locator("article").filter({
+    has: page.getByRole("heading", { name: "Бородинский", exact: true }),
+  });
   await expect(
     card.getByText("Цена уточняется", { exact: true }),
   ).toBeVisible();
   await expect(card.getByRole("button")).toBeDisabled();
   await expect(card.locator("img")).toHaveCount(0);
+});
+
+test("header follows reference with active navigation and transparent logo", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  const header = page.locator("header");
+  const toggle = header.getByRole("button", { name: "Навигация", exact: true });
+  const mobile = await toggle.isVisible();
+  if (mobile) await toggle.click();
+  await expect(
+    header.getByRole("link", { name: "Главная", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  if (mobile) await toggle.click();
+  const logo = header.getByRole("img", {
+    name: getSettings().restaurant_name,
+    exact: true,
+  });
+  await expect(logo).toBeVisible();
+  await expect
+    .poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  expect(
+    await header.evaluate((el) => el.getBoundingClientRect().height),
+  ).toBeLessThanOrEqual(76);
+  await page.screenshot({
+    path: testInfo.outputPath("header.png"),
+    clip: { x: 0, y: 0, width: page.viewportSize()!.width, height: 180 },
+  });
+  await page.goto("/menu/");
+  if (mobile) await toggle.click();
+  await expect(
+    page.locator("header").getByRole("link", { name: "Меню", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
 });

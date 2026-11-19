@@ -89,3 +89,15 @@ test("unavailable products are removed from saved cart", () => {
     ),
   ).toEqual({ items: [], changed: true });
 });
+
+test("unpriced assortment cannot enter checkout as free items", () => {
+  const unpriced = getProducts().find((p) => p.price === null)!;
+  expect(unpriced).toBeTruthy();
+  expect(reconcileCart([{ product_id: unpriced.id, quantity: 1 }])).toEqual({
+    items: [],
+    changed: true,
+  });
+  expect(() =>
+    buildOrder(data, [{ product_id: unpriced.id, quantity: 1 }], settings),
+  ).toThrow("Состав корзины изменился");
+});

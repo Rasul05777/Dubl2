@@ -93,7 +93,7 @@ export function Catalog({
               </h3>
               <p>{p.description}</p>
               <div className="product-bottom">
-                <b>{money(p.price)}</b>
+                <b>{p.price === null ? "Цена уточняется" : money(p.price)}</b>
                 {items.find((x) => x.product.id === p.id) ? (
                   <Quantity
                     product={p}
@@ -104,7 +104,7 @@ export function Catalog({
                 ) : (
                   <button
                     aria-label={"В корзину: " + p.name}
-                    disabled={!p.is_available}
+                    disabled={!p.is_available || p.price === null}
                     className="add"
                     onClick={() => change(p, 1)}
                   >

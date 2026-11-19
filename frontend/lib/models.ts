@@ -28,7 +28,7 @@ export const categorySchema = z.object({
 export const productSchema = categorySchema.extend({
   category_id: z.number().int().positive(),
   description: z.string(),
-  price: amount,
+  price: amount.nullable(),
   weight: z.string(),
   image_url: image,
   is_available: z.boolean(),

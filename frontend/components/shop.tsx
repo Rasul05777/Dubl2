@@ -68,7 +68,11 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   }
   const change = (product: Product, d: number) =>
     setLines((old) => {
-      if (!getProducts().some((p) => p.id === product.id && p.is_available))
+      if (
+        !getProducts().some(
+          (p) => p.id === product.id && p.is_available && p.price !== null,
+        )
+      )
         return old;
       const entry = old.find((x) => x.product_id === product.id);
       return entry

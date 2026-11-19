@@ -39,6 +39,7 @@ export function reconcileCart(
     const p = catalog.find((p) => p.id === id);
     if (
       !p?.is_available ||
+      p.price === null ||
       !Number.isInteger(row?.quantity) ||
       row.quantity < 1
     ) {

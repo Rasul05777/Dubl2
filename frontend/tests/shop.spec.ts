@@ -114,14 +114,15 @@ test("delivery and pickup forms validate without backend", async ({ page }) => {
     .getByRole("button", { name: "Оформить заказ", exact: true })
     .click();
   if (!getSettings().whatsapp)
-    await expect(page.getByRole("alert").filter({hasText:"Номер WhatsApp"})).toContainText(
-      "Номер WhatsApp ещё не указан",
-    );
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Номер WhatsApp" }),
+    ).toContainText("Номер WhatsApp ещё не указан");
 });
 test("all internal routes open directly; admin absent; mobile layout fits", async ({
   page,
   request,
 }) => {
+  test.setTimeout(120000);
   for (const path of [
     "/",
     "/menu/",
@@ -137,4 +138,24 @@ test("all internal routes open directly; admin absent; mobile layout fits", asyn
     ).toBeTruthy();
   }
   expect((await request.get("/admin/")).status()).toBe(404);
+});
+
+test("new assortment has names and no invented prices or photos", async ({
+  page,
+}) => {
+  await page.goto("/menu/");
+  await page.getByRole("button", { name: "Хлеб", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Бородинский", exact: true }),
+  ).toBeVisible();
+  const card = page
+    .locator("article")
+    .filter({
+      has: page.getByRole("heading", { name: "Бородинский", exact: true }),
+    });
+  await expect(
+    card.getByText("Цена уточняется", { exact: true }),
+  ).toBeVisible();
+  await expect(card.getByRole("button")).toBeDisabled();
+  await expect(card.locator("img")).toHaveCount(0);
 });

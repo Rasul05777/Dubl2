@@ -19,5 +19,75 @@
     "slug": "desserts",
     "sort_order": 3,
     "is_active": true
+  },
+  {
+    "id": 4,
+    "name": "Хлеб",
+    "slug": "bread",
+    "sort_order": 10,
+    "is_active": true
+  },
+  {
+    "id": 5,
+    "name": "Булочки",
+    "slug": "buns",
+    "sort_order": 11,
+    "is_active": true
+  },
+  {
+    "id": 6,
+    "name": "Пирожки",
+    "slug": "pirozhki",
+    "sort_order": 12,
+    "is_active": true
+  },
+  {
+    "id": 7,
+    "name": "Пирожные",
+    "slug": "cakes-small",
+    "sort_order": 14,
+    "is_active": true
+  },
+  {
+    "id": 8,
+    "name": "Торты",
+    "slug": "cakes",
+    "sort_order": 15,
+    "is_active": true
+  },
+  {
+    "id": 9,
+    "name": "Фастфуд",
+    "slug": "fastfood",
+    "sort_order": 16,
+    "is_active": true
+  },
+  {
+    "id": 10,
+    "name": "Слойка",
+    "slug": "puff-pastry",
+    "sort_order": 17,
+    "is_active": true
+  },
+  {
+    "id": 11,
+    "name": "Салаты",
+    "slug": "salads",
+    "sort_order": 18,
+    "is_active": true
+  },
+  {
+    "id": 12,
+    "name": "Мелкая выпечка",
+    "slug": "small-pastries",
+    "sort_order": 19,
+    "is_active": true
+  },
+  {
+    "id": 13,
+    "name": "Полуфабрикаты",
+    "slug": "ready-to-cook",
+    "sort_order": 20,
+    "is_active": true
   }
 ]

@@ -64,7 +64,7 @@ export default function Checkout() {
               onSubmit={handleSubmit(submit)}
               onChange={() => setPreview(null)}
             >
-              <h3>Контактные данные</h3>
+              <h3>Данные для заказа</h3>
               <label>
                 Ваше имя
                 <input
@@ -74,19 +74,6 @@ export default function Checkout() {
                 />
                 {errors.name && (
                   <small className="error">{errors.name.message}</small>
-                )}
-              </label>
-              <label>
-                Телефон
-                <input
-                  aria-label="Телефон"
-                  {...register("phone")}
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+7 ___ ___-__-__"
-                />
-                {errors.phone && (
-                  <small className="error">{errors.phone.message}</small>
                 )}
               </label>
               <label>
@@ -133,7 +120,7 @@ export default function Checkout() {
                 />
               </label>
               <p className="muted">
-                Сумма заказа предварительная. Контактные данные будут включены в
+                Сумма заказа предварительная. Данные для заказа будут включены в
                 сообщение WhatsApp.
               </p>
               {error && (

@@ -105,7 +105,7 @@ test("delivery and pickup forms validate without backend", async ({ page }) => {
     .click();
   await expect(page.getByText("Введите имя", { exact: true })).toBeVisible();
   await page.getByLabel("Ваше имя").fill("Анна");
-  await page.getByLabel("Телефон", { exact: true }).fill("+79991234567");
+  await expect(page.getByLabel("Телефон", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Адрес доставки")).toBeVisible();
   await page.getByLabel("Адрес доставки").fill("Пушкина, дом 1");
   await page.getByLabel("Как вам удобно?").selectOption("pickup");

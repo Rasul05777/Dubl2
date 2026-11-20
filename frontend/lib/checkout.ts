@@ -6,10 +6,6 @@ import { cents, money } from "./format";
 export const checkoutSchema = z
   .object({
     name: z.string().trim().min(2, "Введите имя").max(100),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^\+?[\d ()-]{10,22}$/, "Введите корректный телефон"),
     method: z.enum(["delivery", "pickup"]),
     address: z.string().trim().max(500),
     comment: z.string().trim().max(1000),
@@ -79,7 +75,6 @@ export function buildOrder(
       ? `Адрес доставки: ${data.address}`
       : `Адрес самовывоза: ${settings.address || "уточнить у сотрудника"}`,
     `Имя: ${data.name}`,
-    `Телефон: ${data.phone}`,
     `Время: ${data.scheduled_at || "как можно скорее"}`,
     `Комментарий: ${data.comment || "нет"}`,
     "",

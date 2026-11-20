@@ -4,7 +4,6 @@ import { getSettings } from "../lib/settings";
 import { reconcileCart, getProducts } from "../lib/catalog";
 const data: CheckoutForm = {
   name: "Анна",
-  phone: "+79991234567",
   method: "delivery",
   address: "Пушкина 1",
   comment: "Без сахара & спасибо",
@@ -27,6 +26,9 @@ test("WhatsApp uses catalog prices, encoded text and preliminary delivery total"
   expect(order.message).toContain("Предварительная сумма");
   expect(order.message).toContain(data.comment);
   expect(order.message).toContain(settings.restaurant_name);
+  expect(order.message).toContain("Имя: Анна");
+  expect(order.message).toContain("Адрес доставки: Пушкина 1");
+  expect(order.message).not.toContain("Телефон:");
 });
 test("pickup excludes fee, unknown delivery stays outside total", () => {
   expect(
@@ -43,7 +45,7 @@ test("pickup excludes fee, unknown delivery stays outside total", () => {
   expect(order.total).toBe(280);
   expect(order.message).toContain("+ доставка");
 });
-test("minimum, disabled method, invalid phone and missing WhatsApp are rejected", () => {
+test("minimum, disabled method, invalid name and missing WhatsApp are rejected", () => {
   expect(() =>
     buildOrder(data, [{ product_id: 1, quantity: 1 }], {
       ...settings,
@@ -58,7 +60,7 @@ test("minimum, disabled method, invalid phone and missing WhatsApp are rejected"
   ).toThrow("недоступен");
   expect(() =>
     buildOrder(
-      { ...data, phone: "x" },
+      { ...data, name: "" },
       [{ product_id: 1, quantity: 1 }],
       settings,
     ),
